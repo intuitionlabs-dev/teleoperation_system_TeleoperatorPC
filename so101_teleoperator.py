@@ -25,8 +25,8 @@ class SO101Teleoperator:
     """Minimal bimanual SO101 leader arms teleoperator"""
     
     def __init__(self, 
-                 left_port: str = "/dev/ttyACM0", 
-                 right_port: str = "/dev/ttyACM1",
+                 left_port: str = "/dev/tty.usbmodem5A680101071", 
+                 right_port: str = "/dev/tty.usbmodem58FA0968181",
                  calibration_dir: str = "./calibration",
                  left_calib_name: str = "left_arm",
                  right_calib_name: str = "right_arm"):

@@ -21,9 +21,9 @@ def main():
     parser.add_argument("--cmd-port", type=int, default=5555)
     parser.add_argument("--fps", type=int, default=60,
                        help="Target teleoperation frequency")
-    parser.add_argument("--left-leader-port", type=str, default="/dev/ttyACM0",
+    parser.add_argument("--left-leader-port", type=str, default="/dev/tty.usbmodem5A680101071",
                        help="Left SO101 leader port")
-    parser.add_argument("--right-leader-port", type=str, default="/dev/ttyACM1", 
+    parser.add_argument("--right-leader-port", type=str, default="/dev/tty.usbmodem58FA0968181", 
                        help="Right SO101 leader port")
     parser.add_argument("--calibration-dir", type=str, default="./calibration",
                        help="Directory to store calibration files")
