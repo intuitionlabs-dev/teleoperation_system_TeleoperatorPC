@@ -7,10 +7,10 @@ echo ""
 
 # Run bimanual teleoperation
 python teleoperate.py \
-    --robot-hostname 192.168.123.139 \
+    --robot-hostname 100.104.247.35 \
     --cmd-port 5555 \
     --obs-port 5556 \
-    --fps 30 \
-    --gello-left-port /dev/GELLO_L \
-    --gello-right-port /dev/GELLO_R \
+    --fps 60 \
+    --gello-left-port /dev/ttyACM0 \
+    --gello-right-port /dev/ttyACM1 \
     "$@"
