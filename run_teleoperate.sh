@@ -12,4 +12,7 @@ python teleoperate.py \
     --fps 60 \
     --left-leader-port /dev/ttyACM0 \
     --right-leader-port /dev/ttyACM1 \
+    --calibration-dir calibration \
+    --left-arm-calib-name left_arm \
+    --right-arm-calib-name right_arm \
     "$@"

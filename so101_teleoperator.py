@@ -1,6 +1,9 @@
 """Minimal SO101 bimanual teleoperator for controlling Piper robots"""
 import time
+import json
 from typing import Dict, Any
+from pathlib import Path
+from dataclasses import dataclass, asdict
 
 try:
     import scservo_sdk as scs
@@ -9,10 +12,24 @@ except ImportError:
     scs = None
 
 
+@dataclass
+class MotorCalibration:
+    """Simple motor calibration data"""
+    id: int
+    homing_offset: int
+    range_min: int
+    range_max: int
+
+
 class SO101Teleoperator:
     """Minimal bimanual SO101 leader arms teleoperator"""
     
-    def __init__(self, left_port: str = "/dev/ttyACM0", right_port: str = "/dev/ttyACM1"):
+    def __init__(self, 
+                 left_port: str = "/dev/ttyACM0", 
+                 right_port: str = "/dev/ttyACM1",
+                 calibration_dir: str = "./calibration",
+                 left_calib_name: str = "left_arm",
+                 right_calib_name: str = "right_arm"):
         self.left_port = left_port
         self.right_port = right_port
         self.left_motors = None
@@ -21,14 +38,33 @@ class SO101Teleoperator:
         
         # Motor IDs for each arm (6 motors per arm)
         self.motor_ids = [1, 2, 3, 4, 5, 6]  # shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll, gripper
+        self.motor_names = ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper"]
         
         # Protocol settings for feetech motors
         self.protocol_version = 0  # SCS protocol
         self.baudrate = 1000000  # 1Mbps
         
+        # Calibration
+        self.calibration_dir = Path(calibration_dir)
+        self.calibration_dir.mkdir(parents=True, exist_ok=True)
+        self.left_calib_file = self.calibration_dir / f"{left_calib_name}.json"
+        self.right_calib_file = self.calibration_dir / f"{right_calib_name}.json"
+        self.left_calibration = {}
+        self.right_calibration = {}
+        
+        # Load calibration if exists
+        self._load_calibration()
+        
     @property
     def is_connected(self) -> bool:
         return self._is_connected
+    
+    @property
+    def is_calibrated(self) -> bool:
+        """Check if both arms are calibrated"""
+        left_calibrated = len(self.left_calibration) == len(self.motor_ids)
+        right_calibrated = len(self.right_calibration) == len(self.motor_ids)
+        return left_calibrated and right_calibrated
     
     def connect(self) -> None:
         """Connect to SO101 leader arms"""
@@ -46,6 +82,10 @@ class SO101Teleoperator:
         
         self._is_connected = True
         print("SO101 leader arms connected")
+        
+        # Check calibration status
+        if not self.is_calibrated:
+            print("\n⚠️  WARNING: Arms not calibrated! Run calibration first for accurate control.")
     
     def _connect_arm(self, port: str):
         """Connect to a single SO101 arm"""
@@ -67,6 +107,74 @@ class SO101Teleoperator:
         
         return {"port": port_handler, "packet": packet_handler}
     
+    def calibrate(self) -> None:
+        """Run calibration for both arms"""
+        print("\n=== SO101 Leader Arms Calibration ===")
+        print("This will calibrate the joint ranges for accurate teleoperation.")
+        
+        # Calibrate left arm
+        print("\n--- Calibrating LEFT arm ---")
+        self.left_calibration = self._calibrate_arm(self.left_motors, "LEFT")
+        self._save_calibration(self.left_calibration, self.left_calib_file)
+        print(f"Left arm calibration saved to: {self.left_calib_file}")
+        
+        # Calibrate right arm
+        print("\n--- Calibrating RIGHT arm ---")
+        self.right_calibration = self._calibrate_arm(self.right_motors, "RIGHT")
+        self._save_calibration(self.right_calibration, self.right_calib_file)
+        print(f"Right arm calibration saved to: {self.right_calib_file}")
+        
+        print("\n✅ Calibration complete!")
+    
+    def _calibrate_arm(self, arm_motors, arm_name: str) -> Dict[str, MotorCalibration]:
+        """Calibrate a single arm"""
+        calibration = {}
+        
+        input(f"\nMove the {arm_name} arm to the MIDDLE/HOME position and press ENTER...")
+        
+        # Read home positions
+        home_positions = self._read_positions(arm_motors)
+        
+        print(f"\nNow move each joint of the {arm_name} arm through its FULL range of motion.")
+        print("Press ENTER when done...")
+        
+        # Record min/max while user moves the arm
+        min_positions = list(home_positions)
+        max_positions = list(home_positions)
+        
+        import threading
+        stop_recording = threading.Event()
+        
+        def record_ranges():
+            while not stop_recording.is_set():
+                positions = self._read_positions(arm_motors)
+                for i in range(len(positions)):
+                    min_positions[i] = min(min_positions[i], positions[i])
+                    max_positions[i] = max(max_positions[i], positions[i])
+                time.sleep(0.05)  # 20Hz sampling
+        
+        # Start recording thread
+        record_thread = threading.Thread(target=record_ranges)
+        record_thread.start()
+        
+        # Wait for user
+        input()
+        stop_recording.set()
+        record_thread.join()
+        
+        # Create calibration entries
+        for i, motor_name in enumerate(self.motor_names):
+            calibration[motor_name] = MotorCalibration(
+                id=self.motor_ids[i],
+                homing_offset=home_positions[i],
+                range_min=min_positions[i],
+                range_max=max_positions[i]
+            )
+            print(f"  {motor_name}: home={home_positions[i]}, "
+                  f"min={min_positions[i]}, max={max_positions[i]}")
+        
+        return calibration
+    
     def get_action(self) -> Dict[str, float]:
         """Read current positions from both SO101 arms"""
         if not self._is_connected:
@@ -82,29 +190,35 @@ class SO101Teleoperator:
         # Map SO101 joint positions to Piper action format
         joint_names = ["shoulder_pan", "shoulder_lift", "elbow_flex", "joint_3", "wrist_flex", "wrist_roll", "gripper"]
         
-        # Left arm - normalize from motor range to [-100, 100] or [0, 100] for gripper
+        # Left arm - normalize using calibration if available
         for i, name in enumerate(joint_names):
             if i < len(left_positions):
                 if i == 6:  # Gripper
-                    # Normalize gripper to 0-100 range
-                    action[f"action.left_piper.{name}.pos"] = self._normalize_gripper(left_positions[i])
+                    action[f"action.left_piper.{name}.pos"] = self._normalize_gripper(
+                        left_positions[i], self.left_calibration.get(self.motor_names[i])
+                    )
                 elif i == 3:  # joint_3 (not used in SO101, set to 0)
                     action[f"action.left_piper.{name}.pos"] = 0.0
                 else:
-                    # Normalize joints to -100 to 100 range
                     idx = i if i < 3 else i - 1  # Skip joint_3
-                    action[f"action.left_piper.{name}.pos"] = self._normalize_joint(left_positions[idx])
+                    action[f"action.left_piper.{name}.pos"] = self._normalize_joint(
+                        left_positions[idx], self.left_calibration.get(self.motor_names[idx])
+                    )
         
         # Right arm
         for i, name in enumerate(joint_names):
             if i < len(right_positions):
                 if i == 6:  # Gripper
-                    action[f"action.right_piper.{name}.pos"] = self._normalize_gripper(right_positions[i])
+                    action[f"action.right_piper.{name}.pos"] = self._normalize_gripper(
+                        right_positions[i], self.right_calibration.get(self.motor_names[i])
+                    )
                 elif i == 3:  # joint_3 (not used in SO101, set to 0)
                     action[f"action.right_piper.{name}.pos"] = 0.0
                 else:
                     idx = i if i < 3 else i - 1
-                    action[f"action.right_piper.{name}.pos"] = self._normalize_joint(right_positions[idx])
+                    action[f"action.right_piper.{name}.pos"] = self._normalize_joint(
+                        right_positions[idx], self.right_calibration.get(self.motor_names[idx])
+                    )
         
         return action
     
@@ -121,18 +235,69 @@ class SO101Teleoperator:
         
         return positions
     
-    def _normalize_joint(self, position: int) -> float:
-        """Normalize motor position (0-4095) to -100 to 100 range"""
-        # STS3215 has 12-bit resolution (0-4095)
-        # Map 2048 as center (0), 0 as -100, 4095 as 100
-        normalized = ((position - 2048) / 2048) * 100
+    def _normalize_joint(self, position: int, calibration: MotorCalibration = None) -> float:
+        """Normalize motor position to -100 to 100 range"""
+        if calibration:
+            # Use calibration data for accurate normalization
+            center = calibration.homing_offset
+            if position < center:
+                # Map [min, center] to [-100, 0]
+                range_size = center - calibration.range_min
+                if range_size > 0:
+                    normalized = ((position - center) / range_size) * 100
+                else:
+                    normalized = 0
+            else:
+                # Map [center, max] to [0, 100]
+                range_size = calibration.range_max - center
+                if range_size > 0:
+                    normalized = ((position - center) / range_size) * 100
+                else:
+                    normalized = 0
+        else:
+            # Fallback: assume 2048 as center (12-bit resolution)
+            normalized = ((position - 2048) / 2048) * 100
+        
         return max(-100, min(100, normalized))
     
-    def _normalize_gripper(self, position: int) -> float:
+    def _normalize_gripper(self, position: int, calibration: MotorCalibration = None) -> float:
         """Normalize gripper position to 0-100 range"""
-        # Map 0-4095 to 0-100
-        normalized = (position / 4095) * 100
+        if calibration:
+            # Use calibration data
+            range_size = calibration.range_max - calibration.range_min
+            if range_size > 0:
+                normalized = ((position - calibration.range_min) / range_size) * 100
+            else:
+                normalized = 50
+        else:
+            # Fallback: map 0-4095 to 0-100
+            normalized = (position / 4095) * 100
+        
         return max(0, min(100, normalized))
+    
+    def _load_calibration(self) -> None:
+        """Load calibration from files if they exist"""
+        if self.left_calib_file.exists():
+            with open(self.left_calib_file, 'r') as f:
+                data = json.load(f)
+                self.left_calibration = {
+                    k: MotorCalibration(**v) for k, v in data.items()
+                }
+            print(f"Loaded left arm calibration from: {self.left_calib_file}")
+        
+        if self.right_calib_file.exists():
+            with open(self.right_calib_file, 'r') as f:
+                data = json.load(f)
+                self.right_calibration = {
+                    k: MotorCalibration(**v) for k, v in data.items()
+                }
+            print(f"Loaded right arm calibration from: {self.right_calib_file}")
+    
+    def _save_calibration(self, calibration: Dict[str, MotorCalibration], filepath: Path) -> None:
+        """Save calibration to file"""
+        data = {k: asdict(v) for k, v in calibration.items()}
+        with open(filepath, 'w') as f:
+            json.dump(data, f, indent=2)
     
     def disconnect(self) -> None:
         """Disconnect from SO101 arms"""

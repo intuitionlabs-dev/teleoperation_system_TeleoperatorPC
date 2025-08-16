@@ -25,6 +25,14 @@ def main():
                        help="Left SO101 leader port")
     parser.add_argument("--right-leader-port", type=str, default="/dev/ttyACM1", 
                        help="Right SO101 leader port")
+    parser.add_argument("--calibration-dir", type=str, default="./calibration",
+                       help="Directory to store calibration files")
+    parser.add_argument("--left-arm-calib-name", type=str, default="left_arm",
+                       help="Name for left arm calibration file")
+    parser.add_argument("--right-arm-calib-name", type=str, default="right_arm",
+                       help="Name for right arm calibration file")
+    parser.add_argument("--calibrate", action="store_true",
+                       help="Run calibration mode")
     
     args = parser.parse_args()
     
@@ -43,15 +51,27 @@ def main():
     # Create teleoperator
     teleop = SO101Teleoperator(
         left_port=args.left_leader_port,
-        right_port=args.right_leader_port
+        right_port=args.right_leader_port,
+        calibration_dir=args.calibration_dir,
+        left_calib_name=args.left_arm_calib_name,
+        right_calib_name=args.right_arm_calib_name
     )
     
-    # Connect everything
-    print("Connecting to robot...")
-    robot.connect()
-    
+    # Connect to leader arms
     print("Connecting to SO101 leader arms...")
     teleop.connect()
+    
+    # Check if calibration mode
+    if args.calibrate:
+        print("\n=== CALIBRATION MODE ===")
+        teleop.calibrate()
+        print("\nCalibration complete! You can now run teleoperation.")
+        teleop.disconnect()
+        return
+    
+    # Normal teleoperation mode
+    print("Connecting to robot...")
+    robot.connect()
     
     print("\nTeleoperation ready! Press Ctrl+C to stop.")
     print("=" * 50)

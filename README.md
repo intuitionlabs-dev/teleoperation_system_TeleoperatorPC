@@ -12,6 +12,15 @@ conda activate teleoperate-TeleoperatorPC
 python -m pip install -r requirements.txt
 ```
 
+## Calibration (First Time Setup)
+```bash
+cd teleoperation_system_TeleoperatorPC
+conda activate teleoperate-TeleoperatorPC
+./calibrate_leader.sh
+```
+
+Follow the on-screen instructions to calibrate the joint ranges of both arms.
+
 ## Launch
 ```bash
 cd teleoperation_system_TeleoperatorPC
@@ -26,9 +35,14 @@ For example, if the Robot PC IP is 100.104.247.35: ./run_teleoperate.sh --robot-
 - `--fps`: Target frequency (default: 60Hz)
 - `--left-leader-port`: Left SO101 port (default: /dev/ttyACM0)
 - `--right-leader-port`: Right SO101 port (default: /dev/ttyACM1)
+- `--calibration-dir`: Directory for calibration files (default: ./calibration)
+- `--left-arm-calib-name`: Left arm calibration filename (default: left_arm)
+- `--right-arm-calib-name`: Right arm calibration filename (default: right_arm)
+- `--calibrate`: Run calibration mode
 
 ## Architecture
 - Read positions from SO101 leader arms (feetech motors)
+- Apply calibration for accurate joint mapping
 - Send commands via ZMQ PUSH (unidirectional)
 - No observation feedback
-- Simple loop: read leader positions → send command → rate limit
+- Simple loop: read leader positions → normalize → send command → rate limit
