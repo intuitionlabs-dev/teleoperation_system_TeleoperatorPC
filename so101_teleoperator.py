@@ -190,35 +190,47 @@ class SO101Teleoperator:
         # Map SO101 joint positions to Piper action format
         joint_names = ["shoulder_pan", "shoulder_lift", "elbow_flex", "joint_3", "wrist_flex", "wrist_roll", "gripper"]
         
-        # Left arm - normalize using calibration if available
-        for i, name in enumerate(joint_names):
-            if i < len(left_positions):
-                if i == 6:  # Gripper
-                    action[f"action.left_piper.{name}.pos"] = self._normalize_gripper(
-                        left_positions[i], self.left_calibration.get(self.motor_names[i])
-                    )
-                elif i == 3:  # joint_3 (not used in SO101, set to 0)
-                    action[f"action.left_piper.{name}.pos"] = 0.0
-                else:
-                    idx = i if i < 3 else i - 1  # Skip joint_3
-                    action[f"action.left_piper.{name}.pos"] = self._normalize_joint(
-                        left_positions[idx], self.left_calibration.get(self.motor_names[idx])
-                    )
+        # Left arm - SO101 has 6 motors, map to Piper's 7 joints
+        action[f"action.left_piper.shoulder_pan.pos"] = self._normalize_joint(
+            left_positions[0], self.left_calibration.get("shoulder_pan")
+        )
+        action[f"action.left_piper.shoulder_lift.pos"] = self._normalize_joint(
+            left_positions[1], self.left_calibration.get("shoulder_lift")
+        )
+        action[f"action.left_piper.elbow_flex.pos"] = self._normalize_joint(
+            left_positions[2], self.left_calibration.get("elbow_flex")
+        )
+        action[f"action.left_piper.joint_3.pos"] = 0.0  # SO101 doesn't have this joint
+        action[f"action.left_piper.wrist_flex.pos"] = self._normalize_joint(
+            left_positions[3], self.left_calibration.get("wrist_flex")
+        )
+        action[f"action.left_piper.wrist_roll.pos"] = self._normalize_joint(
+            left_positions[4], self.left_calibration.get("wrist_roll")
+        )
+        action[f"action.left_piper.gripper.pos"] = self._normalize_gripper(
+            left_positions[5], self.left_calibration.get("gripper")
+        )
         
         # Right arm
-        for i, name in enumerate(joint_names):
-            if i < len(right_positions):
-                if i == 6:  # Gripper
-                    action[f"action.right_piper.{name}.pos"] = self._normalize_gripper(
-                        right_positions[i], self.right_calibration.get(self.motor_names[i])
-                    )
-                elif i == 3:  # joint_3 (not used in SO101, set to 0)
-                    action[f"action.right_piper.{name}.pos"] = 0.0
-                else:
-                    idx = i if i < 3 else i - 1
-                    action[f"action.right_piper.{name}.pos"] = self._normalize_joint(
-                        right_positions[idx], self.right_calibration.get(self.motor_names[idx])
-                    )
+        action[f"action.right_piper.shoulder_pan.pos"] = self._normalize_joint(
+            right_positions[0], self.right_calibration.get("shoulder_pan")
+        )
+        action[f"action.right_piper.shoulder_lift.pos"] = self._normalize_joint(
+            right_positions[1], self.right_calibration.get("shoulder_lift")
+        )
+        action[f"action.right_piper.elbow_flex.pos"] = self._normalize_joint(
+            right_positions[2], self.right_calibration.get("elbow_flex")
+        )
+        action[f"action.right_piper.joint_3.pos"] = 0.0  # SO101 doesn't have this joint
+        action[f"action.right_piper.wrist_flex.pos"] = self._normalize_joint(
+            right_positions[3], self.right_calibration.get("wrist_flex")
+        )
+        action[f"action.right_piper.wrist_roll.pos"] = self._normalize_joint(
+            right_positions[4], self.right_calibration.get("wrist_roll")
+        )
+        action[f"action.right_piper.gripper.pos"] = self._normalize_gripper(
+            right_positions[5], self.right_calibration.get("gripper")
+        )
         
         return action
     
