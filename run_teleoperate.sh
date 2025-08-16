@@ -9,8 +9,7 @@ echo ""
 python teleoperate.py \
     --robot-hostname 100.104.247.35 \
     --cmd-port 5555 \
-    --obs-port 5556 \
     --fps 60 \
-    --gello-left-port /dev/ttyACM0 \
-    --gello-right-port /dev/ttyACM1 \
+    --left-leader-port /dev/ttyACM0 \
+    --right-leader-port /dev/ttyACM1 \
     "$@"
