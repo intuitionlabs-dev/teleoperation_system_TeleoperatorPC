@@ -1,7 +1,7 @@
 #!/bin/bash
 # Simple launch script for Teleoperator PC
 
-echo "Starting minimal teleoperation..."
+echo "Starting teleoperation..."
 echo ""
 
 # Run bimanual teleoperation
