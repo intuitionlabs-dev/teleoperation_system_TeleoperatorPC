@@ -1,23 +1,23 @@
-# Teleoperation Client (Teleoperator PC)
+# Teleoperation Leader (Teleoperator PC side)
 
-Minimal ZMQ client for bimanual robot teleoperation using SO101 leader arms.
+ZMQ client for bimanual robot teleoperation using SO101 leader arms.
 
-## Requirements
-- Python with `lerobot` conda environment
-- `scservo-sdk` package (for feetech motors)
-- ZeroMQ (pyzmq)
-- SO101 leader arms connected via USB
 
 ## Installation
 ```bash
-conda activate lerobot
-pip install -r requirements.txt
+git clone https://github.com/intuitionlabs-dev/teleoperation_system_TeleoperatorPC.git
+cd teleoperation_system_TeleoperatorPC
+conda create -n teleoperate-TeleoperatorPC python=3.10
+conda activate teleoperate-TeleoperatorPC
+python -m pip install -r requirements.txt
 ```
 
 ## Launch
 ```bash
-conda activate lerobot
-./run_teleoperate.sh --robot-hostname <ROBOT_IP>
+cd teleoperation_system_TeleoperatorPC
+conda activate teleoperate-TeleoperatorPC
+./run_teleoperate.sh --robot-hostname <ROBOT_IP> 
+For example, if the Robot PC IP is 100.104.247.35: ./run_teleoperate.sh --robot-hostname 100.104.247.35
 ```
 
 ## Options
