@@ -16,10 +16,10 @@ from so101_teleoperator import SO101Teleoperator
 def main():
     parser = argparse.ArgumentParser()
     # Only bimanual configuration is supported
-    parser.add_argument("--robot-hostname", type=str, default="192.168.123.139",
+    parser.add_argument("--robot-hostname", type=str, default="100.104.247.35",
                        help="Hostname/IP of the Robot PC")
     parser.add_argument("--cmd-port", type=int, default=5555)
-    parser.add_argument("--fps", type=int, default=30,
+    parser.add_argument("--fps", type=int, default=60,
                        help="Target teleoperation frequency")
     parser.add_argument("--left-leader-port", type=str, default="/dev/ttyACM0",
                        help="Left SO101 leader port")
