@@ -2,7 +2,6 @@
 # Simple launch script for Teleoperator PC
 
 echo "Starting minimal teleoperation..."
-echo "Make sure the conda environment 'lerobot' is activated"
 echo ""
 
 # Run bimanual teleoperation
