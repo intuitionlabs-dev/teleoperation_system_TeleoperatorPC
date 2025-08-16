@@ -5,5 +5,5 @@ from dataclasses import dataclass
 @dataclass
 class BimanualPiperClientConfig:
     """Configuration for BimanualPiperClient"""
-    hostname: str = "192.168.123.139"  # Robot PC IP address
+    hostname: str = "100.104.247.35"  # Robot PC IP address
     cmd_port: int = 5555  # Port for sending commands
