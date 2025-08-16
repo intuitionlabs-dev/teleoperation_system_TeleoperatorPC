@@ -1,4 +1,4 @@
 # Minimal requirements for teleoperation client
-pyzmq>=25.0.0
-scservo-sdk>=0.0.5
+pyzmq>=26.2.1
+feetech-servo-sdk>=1.0.0
 numpy>=1.24.0
