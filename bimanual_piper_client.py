@@ -29,10 +29,15 @@ class BimanualPiperClient:
         
         self.context = zmq.Context()
         
-        # Command sender (PUSH)
-        self.push_cmd = self.context.socket(zmq.PUSH)
+        # Command sender (PUB) - changed from PUSH to avoid queuing
+        self.push_cmd = self.context.socket(zmq.PUB)
         self.push_cmd.setsockopt(zmq.SNDTIMEO, 100)  # 100ms timeout
+        self.push_cmd.setsockopt(zmq.SNDHWM, 1)  # Keep only latest message
+        self.push_cmd.setsockopt(zmq.LINGER, 0)  # Don't wait on close
         self.push_cmd.connect(f"tcp://{self.config.hostname}:{self.config.cmd_port}")
+        
+        # PUB sockets need time to establish connection to avoid message loss
+        time.sleep(0.1)
         
         self._is_connected = True
         print(f"Connected to robot at {self.config.hostname}")
