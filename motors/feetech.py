@@ -87,8 +87,7 @@ class FeetechMotorsBus(MotorsBus):
                     raw_value = dxl_present_position
                     if motor_name in self.calibration:
                         calib = self.calibration[motor_name]
-                        # Apply calibration
-                        raw_value = raw_value - calib.homing_offset
+                        # Don't apply homing_offset - it's already applied by the hardware
                         # Normalize based on range
                         if motor.norm_mode.value == "range_m100_100":
                             normalized = ((raw_value - calib.range_min) / (calib.range_max - calib.range_min)) * 200 - 100
@@ -206,4 +205,25 @@ class FeetechMotorsBus(MotorsBus):
     
     def write_calibration(self, calibration: dict[str, MotorCalibration]):
         """Write calibration to the motors."""
+        import scservo_sdk as scs
+        
+        # Write calibration values to hardware
+        for motor_name, calib in calibration.items():
+            motor = self.motors[motor_name]
+            
+            # Write homing offset (address 20 for Homing_Offset)
+            self.packet_handler.write2ByteTxRx(
+                self.port_handler, motor.id, 20, calib.homing_offset
+            )
+            
+            # Write min position limit (address 22 for Min_Position_Limit)
+            self.packet_handler.write2ByteTxRx(
+                self.port_handler, motor.id, 22, calib.range_min
+            )
+            
+            # Write max position limit (address 24 for Max_Position_Limit)
+            self.packet_handler.write2ByteTxRx(
+                self.port_handler, motor.id, 24, calib.range_max
+            )
+        
         self.calibration = calibration
