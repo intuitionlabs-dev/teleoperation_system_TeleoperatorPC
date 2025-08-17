@@ -160,37 +160,47 @@ class FeetechMotorsBus(MotorsBus):
         return homing_offsets
     
     def record_ranges_of_motion(self) -> tuple[dict[str, int], dict[str, int]]:
-        """Record the range of motion for all motors."""
+        """Record the range of motion for all motors with live display."""
         import scservo_sdk as scs
+        import select
+        import sys
         
         range_mins = {motor: float('inf') for motor in self.motors}
         range_maxes = {motor: float('-inf') for motor in self.motors}
         
-        print("Move all joints through their full range of motion...")
-        start_time = time.time()
-        
-        while True:
-            # Check if user pressed enter
-            import select
-            import sys
-            if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
-                _ = input()  # consume the enter
-                break
-            
+        user_pressed_enter = False
+        while not user_pressed_enter:
             # Read positions and update ranges
             for motor_name, motor in self.motors.items():
                 position, _, _ = self.packet_handler.read2ByteTxRx(
                     self.port_handler, motor.id, 56  # Present_Position
                 )
-                range_mins[motor_name] = min(range_mins[motor_name], position)
-                range_maxes[motor_name] = max(range_maxes[motor_name], position)
+                if range_mins[motor_name] == float('inf'):
+                    range_mins[motor_name] = position
+                    range_maxes[motor_name] = position
+                else:
+                    range_mins[motor_name] = min(range_mins[motor_name], position)
+                    range_maxes[motor_name] = max(range_maxes[motor_name], position)
+            
+            # Display current ranges
+            print("\n-------------------------------------------")
+            print(f"{'NAME':<15} | {'MIN':>6} | {'POS':>6} | {'MAX':>6}")
+            for motor_name, motor in self.motors.items():
+                position, _, _ = self.packet_handler.read2ByteTxRx(
+                    self.port_handler, motor.id, 56  # Present_Position
+                )
+                print(f"{motor_name:<15} | {range_mins[motor_name]:>6} | {position:>6} | {range_maxes[motor_name]:>6}")
+            
+            # Check if user pressed enter
+            if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
+                _ = sys.stdin.readline()
+                user_pressed_enter = True
+            
+            if not user_pressed_enter:
+                # Move cursor up to overwrite the previous output
+                print(f"\033[{len(self.motors) + 3}A", end="")
             
             time.sleep(0.01)
-            
-            # Timeout after 30 seconds
-            if time.time() - start_time > 30:
-                print("Timeout reached, stopping range recording.")
-                break
         
         return range_mins, range_maxes
     

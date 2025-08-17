@@ -20,7 +20,12 @@ class BimanualPiperClient(Robot):
     name = "bimanual_piper_client"
     
     def __init__(self, config: BimanualPiperClientConfig):
-        super().__init__(config)
+        # Don't call super().__init__ to avoid creating unnecessary calibration directory
+        # The client doesn't need calibration - only the teleoperator arms do
+        self.robot_type = self.name
+        self.id = config.id
+        self.calibration = {}
+        # Network configuration
         self.remote_ip = config.remote_ip
         self.port_zmq_cmd = config.port_zmq_cmd
         self.port_zmq_observations = config.port_zmq_observations
