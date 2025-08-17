@@ -1,5 +1,10 @@
 # Core dependencies for TeleoperatorPC teleoperation
-draccus
-pyzmq
-scservo-sdk
-pyserial
+# Versions based on lerobot_piper/pyproject.toml
+
+# Core packages
+draccus>=0.9.3
+pyzmq>=26.2.1
+pyserial>=3.5
+
+# SO101 leader control (Feetech motors)
+feetech-servo-sdk>=1.0.0

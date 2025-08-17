@@ -6,7 +6,7 @@ Controls remote Piper arms using two SO101 leader arms.
 
 ```bash
 # Create environment
-conda create -n teleop_control python=3.10
+conda create -n teleop_control python=3.10 -y
 conda activate teleop_control
 
 # Install dependencies
