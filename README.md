@@ -1,48 +1,44 @@
-# Teleoperation Leader (Teleoperator PC side)
+# Teleoperator PC - SO101 Leader Control
 
-ZMQ client for bimanual robot teleoperation using SO101 leader arms.
+Controls remote Piper arms using two SO101 leader arms.
 
+## Setup
 
-## Installation
 ```bash
-git clone https://github.com/intuitionlabs-dev/teleoperation_system_TeleoperatorPC.git
-cd teleoperation_system_TeleoperatorPC
-conda create -n teleoperate-TeleoperatorPC python=3.10
-conda activate teleoperate-TeleoperatorPC
-python -m pip install -r requirements.txt
+# Create environment
+conda create -n teleop_control python=3.10
+conda activate teleop_control
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-## Calibration (First Time Setup)
+## Calibration (First Time Only)
+
 ```bash
-cd teleoperation_system_TeleoperatorPC
-conda activate teleoperate-TeleoperatorPC
-./calibrate_leader.sh
+python -m teleoperate --bimanual=true --remote_ip=<ROBOT_IP>
+# Follow on-screen calibration instructions
 ```
 
-Follow the on-screen instructions to calibrate the joint ranges of both arms.
+## Run
 
-## Launch
 ```bash
-cd teleoperation_system_TeleoperatorPC
-conda activate teleoperate-TeleoperatorPC
-./run_teleoperate.sh --robot-hostname <ROBOT_IP> 
-For example, if the Robot PC IP is 100.104.247.35: ./run_teleoperate.sh --robot-hostname 100.104.247.35
+./run_teleoperate.sh
 ```
 
-## Options
-- `--robot-hostname`: Robot PC IP (default: 100.104.247.35)
-- `--cmd-port`: Command port (default: 5555)
-- `--fps`: Target frequency (default: 60Hz)
-- `--left-leader-port`: Left SO101 port (default: /dev/ttyACM0)
-- `--right-leader-port`: Right SO101 port (default: /dev/ttyACM1)
-- `--calibration-dir`: Directory for calibration files (default: ./calibration)
-- `--left-arm-calib-name`: Left arm calibration filename (default: left_arm)
-- `--right-arm-calib-name`: Right arm calibration filename (default: right_arm)
-- `--calibrate`: Run calibration mode
+Or manually:
+```bash
+python -m teleoperate \
+    --bimanual=true \
+    --remote_ip=100.117.16.87 \
+    --left_arm_port_teleop=/dev/ttyACM2 \
+    --right_arm_port_teleop=/dev/ttyACM0 \
+    --teleop_calibration_dir=calibration \
+    --left_arm_calib_name=my_left \
+    --right_arm_calib_name=my_right
+```
 
-## Architecture
-- Read positions from SO101 leader arms (feetech motors)
-- Apply calibration for accurate joint mapping
-- Send commands via ZMQ PUSH (unidirectional)
-- No observation feedback
-- Simple loop: read leader positions → normalize → send command → rate limit
+## Configuration
+- Update `--remote_ip` with your Robot PC's IP address
+- Check USB ports for SO101 arms (`/dev/ttyACM*`)
+- Calibration files are saved in `calibration/` directory

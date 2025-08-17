@@ -1,5 +1,0 @@
-# Ignore all calibration files
-*.json
-
-# But keep this file so the directory exists
-!.gitignore

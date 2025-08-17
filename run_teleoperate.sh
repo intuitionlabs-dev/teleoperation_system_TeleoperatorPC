@@ -1,17 +1,11 @@
 #!/bin/bash
-# Simple launch script for Teleoperator PC
+# Script to run teleoperation with bimanual SO101 leaders and remote Piper followers
 
-echo "Starting teleoperation..."
-echo ""
-
-# Run bimanual teleoperation
-python teleoperate.py \
-    --robot-hostname 100.104.247.35 \
-    --cmd-port 5555 \
-    --fps 60 \
-    --left-leader-port /dev/ttyACM1 \
-    --right-leader-port /dev/ttyACM0 \
-    --calibration-dir calibration \
-    --left-arm-calib-name left_arm \
-    --right-arm-calib-name right_arm \
-    "$@"
+python -m teleoperate \
+    --bimanual=true \
+    --remote_ip=100.117.16.87 \
+    --left_arm_port_teleop=/dev/ttyACM2 \
+    --right_arm_port_teleop=/dev/ttyACM0 \
+    --teleop_calibration_dir=calibration \
+    --left_arm_calib_name=my_left \
+    --right_arm_calib_name=my_right
