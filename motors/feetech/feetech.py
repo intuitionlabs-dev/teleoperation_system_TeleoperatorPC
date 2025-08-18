@@ -7,7 +7,7 @@ import time
 from enum import Enum
 from typing import Dict, Any
 
-from motors.motors_bus import Motor, MotorCalibration, MotorsBus
+from ..motors_bus import Motor, MotorCalibration, MotorsBus
 
 logger = logging.getLogger(__name__)
 

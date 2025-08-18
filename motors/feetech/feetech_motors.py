@@ -8,9 +8,10 @@ from copy import deepcopy
 from enum import Enum
 from pprint import pformat
 
-from .encoding_utils import decode_sign_magnitude, encode_sign_magnitude
-from .motors_bus import Motor, MotorCalibration, MotorsBus, NameOrID, Value, get_address
-from .exceptions import DeviceNotConnectedError
+from ..encoding_utils import decode_sign_magnitude, encode_sign_magnitude
+from ..motors_bus import Motor, MotorCalibration, MotorsBus
+from ..motor_types import NameOrID, Value
+from ..exceptions import DeviceNotConnectedError
 from .feetech_tables import (
     FIRMWARE_MAJOR_VERSION,
     FIRMWARE_MINOR_VERSION,
@@ -50,6 +51,16 @@ class OperatingMode(Enum):
 class DriveMode(Enum):
     NON_INVERTED = 0
     INVERTED = 1
+
+
+def get_address(control_table: dict, model: str, data_name: str) -> tuple[int, int]:
+    """Get the address and length for a given data name from the control table."""
+    if model not in control_table:
+        raise ValueError(f"Model {model} not found in control table")
+    if data_name not in control_table[model]:
+        raise ValueError(f"Data name {data_name} not found in control table for model {model}")
+    entry = control_table[model][data_name]
+    return entry[0], entry[1]  # (address, length)
 
 
 class TorqueMode(Enum):

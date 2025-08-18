@@ -3,7 +3,7 @@ Motor control modules for teleoperation.
 """
 
 from .motors_bus import Motor, MotorCalibration, MotorNormMode, MotorsBus
-from .feetech import FeetechMotorsBus, OperatingMode
+from .feetech import FeetechMotorsBus, OperatingMode  # Re-export for backward compatibility
 
 __all__ = [
     "Motor",
