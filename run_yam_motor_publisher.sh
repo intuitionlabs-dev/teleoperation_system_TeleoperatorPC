@@ -8,7 +8,7 @@ if [ -f "$VENV_PATH/bin/activate" ]; then
 fi
 
 # Default configuration
-REMOTE_IP="100.117.16.87"
+REMOTE_IP="100.119.166.86"
 REMOTE_PORT=5569
 
 # Parse command line arguments
@@ -24,7 +24,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         --help)
             echo "Usage: $0 [--remote-ip IP] [--remote-port PORT]"
-            echo "  --remote-ip: Robot PC IP address (default: 100.117.16.87)"
+            echo "  --remote-ip: Robot PC IP address (default: 100.119.166.86)"
             echo "  --remote-port: Motor enable port (default: 5569)"
             exit 0
             ;;

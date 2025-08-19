@@ -3,7 +3,7 @@
 
 # Default configuration
 SYSTEM="piper-so101"
-REMOTE_IP="100.117.16.87"
+REMOTE_IP=""  # Will be set based on system
 FPS=60
 
 # Parse command line arguments
@@ -24,7 +24,9 @@ while [[ $# -gt 0 ]]; do
         --help)
             echo "Usage: $0 [--system SYSTEM] [--remote-ip IP] [--fps FPS]"
             echo "  --system: piper-so101 or yam-dynamixel (default: piper-so101)"
-            echo "  --remote-ip: Robot PC IP address (default: 100.117.16.87)"
+            echo "  --remote-ip: Robot PC IP address"
+            echo "             Default for piper-so101: 100.117.16.87"
+            echo "             Default for yam-dynamixel: 100.119.166.86"
             echo "  --fps: Control frequency (default: 60)"
             exit 0
             ;;
@@ -35,6 +37,15 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# Set default IP based on system if not specified
+if [ -z "$REMOTE_IP" ]; then
+    if [ "$SYSTEM" = "yam-dynamixel" ]; then
+        REMOTE_IP="100.119.166.86"
+    else
+        REMOTE_IP="100.117.16.87"
+    fi
+fi
 
 echo "Starting teleoperation client"
 echo "System: $SYSTEM"

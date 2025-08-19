@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class YAMMotorEnableConfig:
     """Configuration for YAM motor enable publisher."""
-    remote_ip: str = "100.117.16.87"
+    remote_ip: str = "100.119.166.86"
     remote_port: int = 5569  # YAM uses 5569 for motor enable
     timeout_ms: int = 1000
 
@@ -182,7 +182,7 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description="YAM Motor Enable Publisher")
-    parser.add_argument("--remote-ip", default="100.117.16.87",
+    parser.add_argument("--remote-ip", default="100.119.166.86",
                         help="Remote robot IP address")
     parser.add_argument("--remote-port", type=int, default=5569,
                         help="Remote motor enable port")

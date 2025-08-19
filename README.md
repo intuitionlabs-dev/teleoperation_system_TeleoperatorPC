@@ -74,7 +74,7 @@ python -m teleoperate \
 python -m teleoperate \
     --system yam-dynamixel \
     --bimanual=true \
-    --remote_ip=100.117.16.87 \
+    --remote_ip=100.119.166.86 \
     --fps=60
 ```
 
@@ -91,7 +91,14 @@ python motor_enable_publisher.py --remote_ip 100.117.16.87
 Run in a separate terminal to remotely enable/reset YAM motors:
 
 ```bash
-python yam_motor_enable_publisher.py --remote-ip 100.117.16.87
+# Quick start with defaults (connects to 100.119.166.86)
+./run_yam_motor_publisher.sh
+
+# Or with custom robot IP
+./run_yam_motor_publisher.sh --remote-ip 192.168.1.100
+
+# Or manually
+python yam_motor_enable_publisher.py --remote-ip 100.119.166.86
 ```
 
 Interactive commands (both systems):
@@ -107,8 +114,10 @@ Interactive commands (both systems):
 ## Configuration
 
 ### Network
-- Default Robot PC IP: `100.117.16.87` (via Tailscale)
-- Update `--remote_ip` with your Robot PC's IP address
+- Default Robot PC IPs (via Tailscale):
+  - Piper-SO101 system: `100.117.16.87`
+  - YAM-Dynamixel system: `100.119.166.86`
+- Update `--remote_ip` with your Robot PC's IP address if different
 
 ### SO101 System
 - Check USB ports for SO101 arms (`/dev/ttyACM*`)
