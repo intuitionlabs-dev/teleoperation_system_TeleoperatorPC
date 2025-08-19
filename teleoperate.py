@@ -44,8 +44,8 @@ class TeleoperateConfig:
     # YAM-Dynamixel parameters
     yam_left_port: str = "/dev/ttyACM0"
     yam_right_port: str = "/dev/ttyACM1"
-    yam_left_config: str = "../../i2rt/gello_software/configs/yam_auto_generated_left.yaml"
-    yam_right_config: str = "../../i2rt/gello_software/configs/yam_auto_generated_right.yaml"
+    yam_left_config: str = "../i2rt/gello_software/configs/yam_auto_generated_left.yaml"
+    yam_right_config: str = "../i2rt/gello_software/configs/yam_auto_generated_right.yaml"
     
     # General parameters
     bimanual: bool = True

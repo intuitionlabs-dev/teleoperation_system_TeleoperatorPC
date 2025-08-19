@@ -84,6 +84,30 @@ class BimanualDynamixelLeader(Teleoperator):
     def is_connected(self) -> bool:
         return self._is_connected
     
+    @property
+    def action_features(self) -> dict[str, type]:
+        """Dictionary describing the structure and types of actions produced."""
+        base_features = {
+            "joint_0.pos": float,
+            "joint_1.pos": float,
+            "joint_2.pos": float,
+            "joint_3.pos": float,
+            "joint_4.pos": float,
+            "joint_5.pos": float,
+            "joint_6.pos": float,
+        }
+        combined_features = {}
+        for key in base_features:
+            combined_features[f"left_{key}"] = base_features[key]
+            combined_features[f"right_{key}"] = base_features[key]
+        return combined_features
+    
+    @property
+    def feedback_features(self) -> dict[str, type]:
+        """Dictionary describing the structure and types of feedback expected."""
+        # YAM teleoperators don't use feedback
+        return {}
+    
     def connect(self, calibrate: bool = True) -> None:
         """Connect to the Dynamixel leader arms."""
         if self._is_connected:
@@ -109,63 +133,10 @@ class BimanualDynamixelLeader(Teleoperator):
         logger.info(f"{self.name} connected successfully")
     
     def _setup_hardware_servers(self):
-        """Setup ZMQ servers for hardware communication."""
-        # Left arm
-        logger.info(f"Setting up left arm hardware server on port {self.config.left_arm.hardware_port}")
-        
-        # Create left robot
-        left_robot_cfg = self.left_cfg["robot"]
-        if isinstance(left_robot_cfg.get("config"), str):
-            left_robot_cfg["config"] = OmegaConf.to_container(
-                OmegaConf.load(left_robot_cfg["config"]), resolve=True
-            )
-        left_robot = self._instantiate_from_dict(left_robot_cfg)
-        
-        # Create ZMQ server for left arm
-        self.left_server = self._ZMQServerRobot(
-            left_robot, 
-            port=self.config.left_arm.hardware_port,
-            host="127.0.0.1"
-        )
-        self.left_thread = threading.Thread(target=self.left_server.serve, daemon=False)
-        self.left_thread.start()
-        
-        # Wait and create client
-        time.sleep(0.5)
-        self.left_client = self._ZMQClientRobot(
-            port=self.config.left_arm.hardware_port,
-            host="127.0.0.1"
-        )
-        
-        # Right arm
-        logger.info(f"Setting up right arm hardware server on port {self.config.right_arm.hardware_port}")
-        
-        # Add delay to prevent CAN conflicts
-        time.sleep(3)
-        
-        # Create right robot
-        right_robot_cfg = self.right_cfg["robot"]
-        if isinstance(right_robot_cfg.get("config"), str):
-            right_robot_cfg["config"] = OmegaConf.to_container(
-                OmegaConf.load(right_robot_cfg["config"]), resolve=True
-            )
-        right_robot = self._instantiate_from_dict(right_robot_cfg)
-        
-        # Create ZMQ server for right arm
-        self.right_server = self._ZMQServerRobot(
-            right_robot,
-            port=self.config.right_arm.hardware_port,
-            host="127.0.0.1"
-        )
-        self.right_thread = threading.Thread(target=self.right_server.serve, daemon=False)
-        self.right_thread.start()
-        
-        # Wait and create client
-        time.sleep(0.5)
-        self.right_client = self._ZMQClientRobot(
-            port=self.config.right_arm.hardware_port,
-            host="127.0.0.1"
-        )
+        """Setup hardware communication for Dynamixel leader arms."""
+        # For teleoperator side, we don't need ZMQ servers or robot instances
+        # The agents directly communicate with the Dynamixel hardware
+        logger.info("Hardware servers not needed for Dynamixel leader arms - agents connect directly to hardware")
     
     def get_action(self) -> Optional[Dict[str, float]]:
         """Get current action from the Dynamixel leader arms."""
@@ -201,31 +172,20 @@ class BimanualDynamixelLeader(Teleoperator):
         """Dynamixel arms are always calibrated (absolute encoders)."""
         return True
     
+    def send_feedback(self, feedback: dict[str, Any]) -> None:
+        """Send feedback to the teleoperator (not used for YAM/Dynamixel)."""
+        # YAM teleoperators don't use feedback
+        pass
+    
     def disconnect(self) -> None:
         """Disconnect from the Dynamixel leader arms."""
         if not self._is_connected:
             return
         
         logger.info(f"Disconnecting {self.name}...")
-        self._stop_threads = True
         
-        # Close clients
-        if self.left_client:
-            self.left_client.close()
-        if self.right_client:
-            self.right_client.close()
-        
-        # Close servers
-        if self.left_server:
-            self.left_server.close()
-        if self.right_server:
-            self.right_server.close()
-        
-        # Wait for threads
-        if self.left_thread:
-            self.left_thread.join(timeout=2)
-        if self.right_thread:
-            self.right_thread.join(timeout=2)
+        # The agents handle their own disconnection/cleanup
+        # No servers or threads to close since we're not using ZMQ
         
         self._is_connected = False
         logger.info(f"{self.name} disconnected")

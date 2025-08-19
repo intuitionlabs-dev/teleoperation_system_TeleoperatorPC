@@ -43,7 +43,7 @@ if [ -z "$REMOTE_IP" ]; then
     if [ "$SYSTEM" = "yam-dynamixel" ]; then
         REMOTE_IP="100.119.166.86"
     else
-        REMOTE_IP="100.117.16.87"
+        REMOTE_IP="100.104.247.35"
     fi
 fi
 
@@ -58,6 +58,8 @@ if [ "$SYSTEM" = "yam-dynamixel" ]; then
     if [ -f "$VENV_PATH/bin/activate" ]; then
         echo "Activating virtual environment for YAM system..."
         source "$VENV_PATH/bin/activate"
+        # Add i2rt to PYTHONPATH for YAM system
+        export PYTHONPATH="/home/francesco/meta-tele-RTX/clean_version/i2rt:$PYTHONPATH"
     fi
 fi
 
