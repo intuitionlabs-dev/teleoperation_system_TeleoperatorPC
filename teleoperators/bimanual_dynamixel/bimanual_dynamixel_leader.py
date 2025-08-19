@@ -31,9 +31,19 @@ class BimanualDynamixelLeader(Teleoperator):
         self._is_connected = False
         self._stop_threads = False
         
-        # Add gello_software to path
-        gello_path = Path(config.gello_path)
-        if gello_path.exists() and str(gello_path) not in sys.path:
+        # Add gello_software to path - handle both absolute and relative paths
+        if Path(config.gello_path).is_absolute():
+            gello_path = Path(config.gello_path)
+        else:
+            # Relative to teleoperation_system_TeleoperatorPC directory
+            base_dir = Path(__file__).parent.parent.parent
+            gello_path = (base_dir / config.gello_path).resolve()
+        
+        if not gello_path.exists():
+            logger.error(f"Could not find gello_software at: {gello_path}")
+            raise RuntimeError(f"gello_software not found at {gello_path}")
+        
+        if str(gello_path) not in sys.path:
             sys.path.append(str(gello_path))
         
         # Import gello modules after adding to path

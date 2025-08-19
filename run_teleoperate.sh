@@ -67,6 +67,8 @@ elif [ "$SYSTEM" = "yam-dynamixel" ]; then
         --system "$SYSTEM" \
         --bimanual=true \
         --remote_ip="$REMOTE_IP" \
+        --yam_left_port=/dev/ttyACM0 \
+        --yam_right_port=/dev/ttyACM1 \
         --fps="$FPS"
 else
     echo "Unknown system: $SYSTEM"

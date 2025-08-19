@@ -4,6 +4,7 @@ Main teleoperation script for controlling bimanual robots (Piper or YAM) with va
 """
 
 import logging
+import sys
 import time
 from dataclasses import dataclass, asdict
 from pathlib import Path
@@ -41,8 +42,10 @@ class TeleoperateConfig:
     right_arm_calib_name: str = "my_right"
     
     # YAM-Dynamixel parameters
-    yam_left_config: str = "/home/francesco/meta-tele-RTX/clean_version/i2rt/gello_software/configs/yam_auto_generated_left.yaml"
-    yam_right_config: str = "/home/francesco/meta-tele-RTX/clean_version/i2rt/gello_software/configs/yam_auto_generated_right.yaml"
+    yam_left_port: str = "/dev/ttyACM0"
+    yam_right_port: str = "/dev/ttyACM1"
+    yam_left_config: str = "../../i2rt/gello_software/configs/yam_auto_generated_left.yaml"
+    yam_right_config: str = "../../i2rt/gello_software/configs/yam_auto_generated_right.yaml"
     
     # General parameters
     bimanual: bool = True
@@ -83,6 +86,27 @@ def teleop_loop(teleop, robot, fps: int, duration: int | None = None):
         move_cursor_up(len(action) + 5)
 
 
+def _update_yam_config_port(config_path: str, port: str):
+    """Update the port in a YAM configuration file if needed."""
+    import yaml
+    
+    try:
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+        
+        # Check if port needs updating
+        if 'agent' in config and 'port' in config['agent']:
+            if config['agent']['port'] != port:
+                logging.info(f"Updating port in {config_path} from {config['agent']['port']} to {port}")
+                config['agent']['port'] = port
+                
+                # Write back the updated config
+                with open(config_path, 'w') as f:
+                    yaml.dump(config, f, default_flow_style=False)
+    except Exception as e:
+        logging.warning(f"Could not update port in {config_path}: {e}")
+
+
 @draccus.wrap()
 def teleoperate(cfg: TeleoperateConfig):
     """Main teleoperation entry point."""
@@ -112,6 +136,42 @@ def teleoperate(cfg: TeleoperateConfig):
         # Configure bimanual YAM robot with Dynamixel leaders
         from teleoperators.bimanual_dynamixel import BimanualDynamixelLeader
         from teleoperators.bimanual_dynamixel.config import BimanualDynamixelLeaderConfig, DynamixelLeaderConfig
+        import os
+        import subprocess
+        
+        # Handle relative paths for config files
+        base_dir = Path(__file__).parent
+        if Path(cfg.yam_left_config).is_absolute():
+            left_config_path = Path(cfg.yam_left_config)
+            right_config_path = Path(cfg.yam_right_config)
+        else:
+            left_config_path = (base_dir / cfg.yam_left_config).resolve()
+            right_config_path = (base_dir / cfg.yam_right_config).resolve()
+        
+        # Check if YAM config files exist, if not prompt for calibration
+        configs_exist = left_config_path.exists() and right_config_path.exists()
+        
+        if not configs_exist:
+            print("\n" + "="*60)
+            print("YAM Configuration Not Found")
+            print("="*60)
+            print("\nThe YAM arm configuration files have not been generated yet.")
+            print("Please run the calibration process first:\n")
+            print("1. Position both YAM arms in their default build position")
+            print("   (straight up, as shown in the documentation)\n")
+            print("2. Run the following commands:")
+            print(f"   cd /home/francesco/meta-tele-RTX/clean_version/i2rt/gello_software")
+            print(f"   source .venv/bin/activate")
+            print(f"   python scripts/generate_yam_config.py --port {cfg.yam_left_port} --output-path configs/yam_auto_generated_left.yaml")
+            print(f"   python scripts/generate_yam_config.py --port {cfg.yam_right_port} --output-path configs/yam_auto_generated_right.yaml\n")
+            print("3. After calibration, run this teleoperation script again.")
+            print("="*60)
+            sys.exit(1)
+        
+        # Update config files with correct ports if specified
+        # This allows overriding the port without regenerating the entire config
+        _update_yam_config_port(str(left_config_path), cfg.yam_left_port)
+        _update_yam_config_port(str(right_config_path), cfg.yam_right_port)
         
         # For YAM system, use different ports to avoid conflicts
         robot_config = BimanualPiperClientConfig(
@@ -124,12 +184,12 @@ def teleoperate(cfg: TeleoperateConfig):
         # Configure bimanual Dynamixel teleoperator
         teleop_config = BimanualDynamixelLeaderConfig(
             left_arm=DynamixelLeaderConfig(
-                config_path=cfg.yam_left_config,
+                config_path=str(left_config_path),
                 hardware_port=6001,
                 id="left"
             ),
             right_arm=DynamixelLeaderConfig(
-                config_path=cfg.yam_right_config,
+                config_path=str(right_config_path),
                 hardware_port=6002,
                 id="right"
             ),
