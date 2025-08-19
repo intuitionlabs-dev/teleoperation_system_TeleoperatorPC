@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Main teleoperation script for controlling bimanual Piper robots with SO101 leaders.
+Main teleoperation script for controlling bimanual robots (Piper or YAM) with various leaders.
 """
 
 import logging
@@ -8,6 +8,7 @@ import time
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from pprint import pformat
+from typing import Literal
 
 import draccus
 
@@ -23,10 +24,14 @@ from utils.logging_utils import init_logging
 @dataclass
 class TeleoperateConfig:
     """Configuration for the teleoperation script."""
+    # System selection
+    system: Literal["piper-so101", "yam-dynamixel"] = "piper-so101"
+    """Which teleoperation system to use."""
+    
     # Robot parameters
     remote_ip: str = "100.117.16.87"
     
-    # Teleop parameters
+    # SO101 teleop parameters (for piper-so101 system)
     left_arm_port_teleop: str = "/dev/ttyACM0"
     right_arm_port_teleop: str = "/dev/ttyACM1"
     teleop_calibration_dir: Path | None = None
@@ -34,6 +39,10 @@ class TeleoperateConfig:
     # Calibration file base names (without .json)
     left_arm_calib_name: str = "my_left"
     right_arm_calib_name: str = "my_right"
+    
+    # YAM-Dynamixel parameters
+    yam_left_config: str = "/home/francesco/meta-tele-RTX/clean_version/i2rt/gello_software/configs/yam_auto_generated_left.yaml"
+    yam_right_config: str = "/home/francesco/meta-tele-RTX/clean_version/i2rt/gello_software/configs/yam_auto_generated_right.yaml"
     
     # General parameters
     bimanual: bool = True
@@ -80,9 +89,13 @@ def teleoperate(cfg: TeleoperateConfig):
     init_logging()
     logging.info(pformat(asdict(cfg)))
     
-    if cfg.bimanual:
-        # Configure bimanual robot client
+    if not cfg.bimanual:
+        raise NotImplementedError("Single arm teleoperation not implemented yet")
+    
+    if cfg.system == "piper-so101":
+        # Configure bimanual Piper robot with SO101 leaders
         robot_config = BimanualPiperClientConfig(remote_ip=cfg.remote_ip)
+        robot = BimanualPiperClient(robot_config)
         
         # Configure bimanual SO101 teleoperator
         teleop_config = BimanualSO101LeaderConfig(
@@ -93,11 +106,41 @@ def teleoperate(cfg: TeleoperateConfig):
             right_calib_name=cfg.right_arm_calib_name,
             id="bimanual",
         )
+        teleop = BimanualSO101Leader(teleop_config)
+        
+    elif cfg.system == "yam-dynamixel":
+        # Configure bimanual YAM robot with Dynamixel leaders
+        from teleoperators.bimanual_dynamixel import BimanualDynamixelLeader
+        from teleoperators.bimanual_dynamixel.config import BimanualDynamixelLeaderConfig, DynamixelLeaderConfig
+        
+        # For YAM system, use different ports to avoid conflicts
+        robot_config = BimanualPiperClientConfig(
+            remote_ip=cfg.remote_ip,
+            port_zmq_cmd=5565,  # YAM uses 5565-5568 instead of 5555-5558
+            port_zmq_observations=5566
+        )
+        robot = BimanualPiperClient(robot_config)
+        
+        # Configure bimanual Dynamixel teleoperator
+        teleop_config = BimanualDynamixelLeaderConfig(
+            left_arm=DynamixelLeaderConfig(
+                config_path=cfg.yam_left_config,
+                hardware_port=6001,
+                id="left"
+            ),
+            right_arm=DynamixelLeaderConfig(
+                config_path=cfg.yam_right_config,
+                hardware_port=6002,
+                id="right"
+            ),
+            id="bimanual",
+        )
+        teleop = BimanualDynamixelLeader(teleop_config)
+        
     else:
-        raise NotImplementedError("Single arm teleoperation not implemented yet")
+        raise ValueError(f"Unknown system: {cfg.system}")
     
-    robot = BimanualPiperClient(robot_config)
-    teleop = BimanualSO101Leader(teleop_config)
+    logging.info(f"Starting {cfg.system} teleoperation system")
     
     teleop.connect()
     robot.connect()

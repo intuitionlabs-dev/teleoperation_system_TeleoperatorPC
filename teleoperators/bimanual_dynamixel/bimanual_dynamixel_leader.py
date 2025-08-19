@@ -1,0 +1,221 @@
+"""
+Bimanual Dynamixel Leader - Controls YAM leader arms with Dynamixel motors.
+"""
+
+import logging
+import sys
+import threading
+import time
+from pathlib import Path
+from typing import Dict, Any, Optional
+
+from omegaconf import OmegaConf
+
+from teleoperators.teleoperator import Teleoperator
+from .config import BimanualDynamixelLeaderConfig
+
+logger = logging.getLogger(__name__)
+
+
+class BimanualDynamixelLeader(Teleoperator):
+    """
+    Bimanual teleoperator using Dynamixel-based YAM leader arms.
+    """
+    
+    config_class = BimanualDynamixelLeaderConfig
+    name = "bimanual_dynamixel_leader"
+    
+    def __init__(self, config: BimanualDynamixelLeaderConfig):
+        super().__init__(config)
+        self.config = config
+        self._is_connected = False
+        self._stop_threads = False
+        
+        # Add gello_software to path
+        gello_path = Path(config.gello_path)
+        if gello_path.exists() and str(gello_path) not in sys.path:
+            sys.path.append(str(gello_path))
+        
+        # Import gello modules after adding to path
+        try:
+            from gello.utils.launch_utils import instantiate_from_dict
+            from gello.agents.agent import BimanualAgent
+            from gello.zmq_core.robot_node import ZMQClientRobot, ZMQServerRobot
+        except ImportError as e:
+            logger.error(f"Failed to import gello modules: {e}")
+            logger.error("Make sure gello_software is properly installed")
+            raise
+        
+        self._instantiate_from_dict = instantiate_from_dict
+        self._BimanualAgent = BimanualAgent
+        self._ZMQClientRobot = ZMQClientRobot
+        self._ZMQServerRobot = ZMQServerRobot
+        
+        # Load configurations
+        self.left_cfg = OmegaConf.to_container(
+            OmegaConf.load(config.left_arm.config_path), resolve=True
+        )
+        self.right_cfg = OmegaConf.to_container(
+            OmegaConf.load(config.right_arm.config_path), resolve=True
+        )
+        
+        # Will be initialized on connect
+        self.left_agent = None
+        self.right_agent = None
+        self.agent = None
+        self.left_server = None
+        self.right_server = None
+        self.left_client = None
+        self.right_client = None
+        self.left_thread = None
+        self.right_thread = None
+    
+    @property
+    def is_connected(self) -> bool:
+        return self._is_connected
+    
+    def connect(self, calibrate: bool = True) -> None:
+        """Connect to the Dynamixel leader arms."""
+        if self._is_connected:
+            raise RuntimeError(f"{self.name} is already connected")
+        
+        logger.info(f"Connecting {self.name}...")
+        
+        # Initialize agents
+        logger.info("Initializing leader arm agents...")
+        self.left_agent = self._instantiate_from_dict(self.left_cfg["agent"])
+        self.right_agent = self._instantiate_from_dict(self.right_cfg["agent"])
+        
+        # Create bimanual agent
+        self.agent = self._BimanualAgent(
+            agent_left=self.left_agent,
+            agent_right=self.right_agent
+        )
+        
+        # Setup hardware servers for each arm
+        self._setup_hardware_servers()
+        
+        self._is_connected = True
+        logger.info(f"{self.name} connected successfully")
+    
+    def _setup_hardware_servers(self):
+        """Setup ZMQ servers for hardware communication."""
+        # Left arm
+        logger.info(f"Setting up left arm hardware server on port {self.config.left_arm.hardware_port}")
+        
+        # Create left robot
+        left_robot_cfg = self.left_cfg["robot"]
+        if isinstance(left_robot_cfg.get("config"), str):
+            left_robot_cfg["config"] = OmegaConf.to_container(
+                OmegaConf.load(left_robot_cfg["config"]), resolve=True
+            )
+        left_robot = self._instantiate_from_dict(left_robot_cfg)
+        
+        # Create ZMQ server for left arm
+        self.left_server = self._ZMQServerRobot(
+            left_robot, 
+            port=self.config.left_arm.hardware_port,
+            host="127.0.0.1"
+        )
+        self.left_thread = threading.Thread(target=self.left_server.serve, daemon=False)
+        self.left_thread.start()
+        
+        # Wait and create client
+        time.sleep(0.5)
+        self.left_client = self._ZMQClientRobot(
+            port=self.config.left_arm.hardware_port,
+            host="127.0.0.1"
+        )
+        
+        # Right arm
+        logger.info(f"Setting up right arm hardware server on port {self.config.right_arm.hardware_port}")
+        
+        # Add delay to prevent CAN conflicts
+        time.sleep(3)
+        
+        # Create right robot
+        right_robot_cfg = self.right_cfg["robot"]
+        if isinstance(right_robot_cfg.get("config"), str):
+            right_robot_cfg["config"] = OmegaConf.to_container(
+                OmegaConf.load(right_robot_cfg["config"]), resolve=True
+            )
+        right_robot = self._instantiate_from_dict(right_robot_cfg)
+        
+        # Create ZMQ server for right arm
+        self.right_server = self._ZMQServerRobot(
+            right_robot,
+            port=self.config.right_arm.hardware_port,
+            host="127.0.0.1"
+        )
+        self.right_thread = threading.Thread(target=self.right_server.serve, daemon=False)
+        self.right_thread.start()
+        
+        # Wait and create client
+        time.sleep(0.5)
+        self.right_client = self._ZMQClientRobot(
+            port=self.config.right_arm.hardware_port,
+            host="127.0.0.1"
+        )
+    
+    def get_action(self) -> Optional[Dict[str, float]]:
+        """Get current action from the Dynamixel leader arms."""
+        if not self._is_connected:
+            logger.warning("Trying to get action but not connected")
+            return None
+        
+        try:
+            # Get action from bimanual agent (reads from hardware via ZMQ clients)
+            action = self.agent.act({})
+            
+            # Format action with proper prefixes
+            formatted_action = {}
+            for key, val in action.items():
+                if not (key.startswith("left_") or key.startswith("right_")):
+                    # Add left_ prefix if no prefix (shouldn't happen with BimanualAgent)
+                    formatted_action[f"left_{key}"] = val
+                else:
+                    formatted_action[key] = val
+            
+            return formatted_action
+            
+        except Exception as e:
+            logger.error(f"Error getting action from leader arms: {e}")
+            return None
+    
+    def calibrate(self) -> None:
+        """Calibration not needed for Dynamixel arms (uses absolute encoders)."""
+        logger.info("Dynamixel arms use absolute encoders - no calibration needed")
+    
+    @property
+    def is_calibrated(self) -> bool:
+        """Dynamixel arms are always calibrated (absolute encoders)."""
+        return True
+    
+    def disconnect(self) -> None:
+        """Disconnect from the Dynamixel leader arms."""
+        if not self._is_connected:
+            return
+        
+        logger.info(f"Disconnecting {self.name}...")
+        self._stop_threads = True
+        
+        # Close clients
+        if self.left_client:
+            self.left_client.close()
+        if self.right_client:
+            self.right_client.close()
+        
+        # Close servers
+        if self.left_server:
+            self.left_server.close()
+        if self.right_server:
+            self.right_server.close()
+        
+        # Wait for threads
+        if self.left_thread:
+            self.left_thread.join(timeout=2)
+        if self.right_thread:
+            self.right_thread.join(timeout=2)
+        
+        self._is_connected = False
+        logger.info(f"{self.name} disconnected")
