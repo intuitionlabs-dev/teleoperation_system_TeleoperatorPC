@@ -25,7 +25,7 @@ pip install -r requirements.txt
 source /home/francesco/meta-tele-RTX/clean_version/i2rt/gello_software/.venv/bin/activate
 
 # Install additional dependencies if needed
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
 
 ## Calibration
