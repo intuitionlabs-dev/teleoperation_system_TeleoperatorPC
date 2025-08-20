@@ -145,17 +145,21 @@ class BimanualDynamixelLeader(Teleoperator):
             return None
         
         try:
-            # Get action from bimanual agent (reads from hardware via ZMQ clients)
-            action = self.agent.act({})
+            # Get action from bimanual agent (returns numpy array)
+            action_array = self.agent.act({})
             
-            # Format action with proper prefixes
+            # Convert numpy array to dictionary with proper joint names
+            # BimanualAgent returns concatenated [left_joints, right_joints]
+            # Each arm has 7 joints (6 DOF + gripper)
             formatted_action = {}
-            for key, val in action.items():
-                if not (key.startswith("left_") or key.startswith("right_")):
-                    # Add left_ prefix if no prefix (shouldn't happen with BimanualAgent)
-                    formatted_action[f"left_{key}"] = val
-                else:
-                    formatted_action[key] = val
+            
+            # First 7 values are for left arm
+            for i in range(7):
+                formatted_action[f"left_joint_{i}.pos"] = float(action_array[i])
+            
+            # Next 7 values are for right arm
+            for i in range(7):
+                formatted_action[f"right_joint_{i}.pos"] = float(action_array[i + 7])
             
             return formatted_action
             
