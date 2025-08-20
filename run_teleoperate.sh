@@ -54,12 +54,14 @@ echo "FPS: $FPS"
 
 # Activate virtual environment if using YAM system
 if [ "$SYSTEM" = "yam-dynamixel" ]; then
-    VENV_PATH="/home/francesco/meta-tele-RTX/clean_version/i2rt/gello_software/.venv"
+    # Get the directory where this script is located
+    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    VENV_PATH="$SCRIPT_DIR/../i2rt/gello_software/.venv"
     if [ -f "$VENV_PATH/bin/activate" ]; then
         echo "Activating virtual environment for YAM system..."
         source "$VENV_PATH/bin/activate"
         # Add i2rt to PYTHONPATH for YAM system
-        export PYTHONPATH="/home/francesco/meta-tele-RTX/clean_version/i2rt:$PYTHONPATH"
+        export PYTHONPATH="$SCRIPT_DIR/../i2rt:$PYTHONPATH"
     fi
 fi
 
