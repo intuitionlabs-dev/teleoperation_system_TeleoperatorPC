@@ -2,6 +2,11 @@
 
 Supports both **Piper-SO101** and **YAM-Dynamixel** teleoperation systems.
 
+## Requirements
+
+- Python 3.10 or higher
+- USB access for leader arms
+
 ## Quick Start
 
 ```bash

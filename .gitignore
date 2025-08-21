@@ -4,8 +4,24 @@ __pycache__/
 *$py.class
 *.so
 .Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
 # Virtual Environment
+.venv/
 venv/
 ENV/
 env/
@@ -15,10 +31,20 @@ env/
 .idea/
 *.swp
 *.swo
-
-# OS
+*~
 .DS_Store
-Thumbs.db
+
+# Calibration data
+calibration/
+*.json
+
+# YAM config files (generated during calibration)
+third_party/configs/yam_auto_generated*.yaml
 
 # Logs
 *.log
+logs/
+
+# Temporary files
+*.tmp
+.cache/

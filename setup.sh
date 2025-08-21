@@ -5,20 +5,33 @@ echo "============================================"
 echo "Setting up Teleoperation System"
 echo "============================================"
 
-# Check if Python 3.8+ is installed
-if ! command -v python3 &> /dev/null; then
-    echo "Error: Python 3 is not installed"
-    exit 1
+# Install uv if not present (globally)
+if ! command -v uv &> /dev/null; then
+    echo ""
+    echo "Installing uv package manager..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="$HOME/.cargo/bin:$PATH"
+    echo "✓ uv installed"
 fi
 
-PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-echo "Found Python $PYTHON_VERSION"
-
-# Create virtual environment
+# Check if Python 3.10+ is available
 echo ""
-echo "Creating virtual environment..."
+echo "Checking Python version..."
+PYTHON_VERSION=$(python3.10 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null || echo "not found")
+if [ "$PYTHON_VERSION" = "not found" ]; then
+    echo "Error: Python 3.10 not found"
+    echo "Please install Python 3.10 or higher"
+    exit 1
+else
+    echo "Found Python $PYTHON_VERSION"
+    PYTHON_CMD="python3.10"
+fi
+
+# Create virtual environment with uv
+echo ""
+echo "Creating virtual environment with uv..."
 if [ ! -d ".venv" ]; then
-    python3 -m venv .venv
+    uv venv .venv --python $PYTHON_CMD
     echo "✓ Virtual environment created"
 else
     echo "✓ Virtual environment already exists"
@@ -26,17 +39,6 @@ fi
 
 # Activate virtual environment
 source .venv/bin/activate
-
-# Install uv if not present
-if ! command -v uv &> /dev/null; then
-    echo ""
-    echo "Installing uv package manager..."
-    pip install --upgrade pip
-    pip install uv
-    echo "✓ uv installed"
-else
-    echo "✓ uv already installed"
-fi
 
 # Install dependencies
 echo ""
