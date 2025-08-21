@@ -1,10 +1,24 @@
 # Core dependencies for TeleoperatorPC teleoperation
-# Versions based on lerobot_piper/pyproject.toml
+# Supports both piper-SO101 and yam-dynamixel systems
 
 # Core packages
 draccus>=0.9.3
 pyzmq>=26.2.1
 pyserial>=3.5
+numpy>=1.24.0
+tyro>=0.8.0
 
 # SO101 leader control (Feetech motors)
 feetech-servo-sdk>=1.0.0
+
+# YAM/Dynamixel dependencies
+dynamixel-sdk>=3.7.0
+omegaconf>=2.3.0
+python-can>=4.0.0
+dm-env>=1.6
+mujoco>=3.0.0
+
+# Visualization and utilities
+opencv-python>=4.5.0
+Pillow>=9.0.0
+pyyaml>=6.0

@@ -23,8 +23,5 @@ class BimanualDynamixelLeaderConfig(TeleoperatorConfig):
     left_arm: DynamixelLeaderConfig = None
     right_arm: DynamixelLeaderConfig = None
     
-    # Virtual environment path for gello_software (relative to teleoperation_system_TeleoperatorPC)
-    venv_path: str = "../i2rt/gello_software/.venv"
-    
-    # Gello software path (relative to teleoperation_system_TeleoperatorPC)
-    gello_path: str = "../i2rt/gello_software"
+    # Path to third-party modules (relative to teleoperation_system_TeleoperatorPC)
+    gello_path: str = "third_party"

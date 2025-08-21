@@ -52,18 +52,9 @@ echo "System: $SYSTEM"
 echo "Remote IP: $REMOTE_IP"
 echo "FPS: $FPS"
 
-# Activate virtual environment if using YAM system
-if [ "$SYSTEM" = "yam-dynamixel" ]; then
-    # Get the directory where this script is located
-    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    VENV_PATH="$SCRIPT_DIR/../i2rt/gello_software/.venv"
-    if [ -f "$VENV_PATH/bin/activate" ]; then
-        echo "Activating virtual environment for YAM system..."
-        source "$VENV_PATH/bin/activate"
-        # Add i2rt to PYTHONPATH for YAM system
-        export PYTHONPATH="$SCRIPT_DIR/../i2rt:$PYTHONPATH"
-    fi
-fi
+# Add third_party modules to PYTHONPATH
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export PYTHONPATH="$SCRIPT_DIR/third_party:$PYTHONPATH"
 
 # Run the teleoperation client with system-specific defaults
 if [ "$SYSTEM" = "piper-so101" ]; then
