@@ -12,8 +12,8 @@ Supports both **Piper-SO101** and **YAM-Dynamixel** teleoperation systems.
 source .venv/bin/activate
 
 # 3. Run teleoperation
-./run_teleoperate.sh --system piper-so101 --remote-ip <ROBOT_IP>  # For Piper
-./run_teleoperate.sh --system yam-dynamixel --remote-ip <ROBOT_IP>  # For YAM
+./run_teleoperate.sh --system piper-so101 --remote-ip 100.104.247.35  # For Piper
+./run_teleoperate.sh --system yam-dynamixel --remote-ip 100.119.166.86  # For YAM
 ```
 
 ## Systems
@@ -38,21 +38,25 @@ Both systems use `/dev/ttyACM0` (left) and `/dev/ttyACM1` (right)
 ### SO101
 Run calibration on first use:
 ```bash
-python -m teleoperate --system piper-so101 --bimanual=true --remote_ip=<IP>
+python -m teleoperate --system piper-so101 --bimanual=true --remote_ip=100.104.247.35
 ```
 
-### Dynamixel
-No calibration needed (absolute encoders)
+### Dynamixel/YAM
+Run calibration to generate config files:
+```bash
+./calibrate_yam.sh
+```
+Position arms straight up (known position) when prompted.
 
 ## Motor Control (Optional)
 
 Enable/reset motors remotely:
 ```bash
 # Piper
-python motor_enable_publisher.py --remote_ip <IP>
+python motor_enable_publisher.py --remote_ip 100.104.247.35
 
 # YAM
-python yam_motor_enable_publisher.py --remote_ip <IP>
+python yam_motor_enable_publisher.py --remote_ip 100.119.166.86
 ```
 
 Commands:

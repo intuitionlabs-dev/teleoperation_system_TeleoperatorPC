@@ -1,0 +1,30 @@
+Metadata-Version: 2.1
+Name: pyyaml-include
+Version: 1.4.1
+Summary: Extending PyYAML with a custom constructor for including YAML files within YAML files
+Author: liu xue yan
+Author-email: liu_xue_yan@foxmail.com
+License: GPLv3+
+Keywords: yaml,PyYAML,include,yml
+Classifier: License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: Topic :: Text Processing :: Markup
+Requires-Python: >=3.6
+License-File: LICENSE
+License-File: AUTHORS.md
+Requires-Dist: PyYAML <7.0,>=6.0
+Provides-Extra: toml
+Requires-Dist: toml ; (python_version <= "3.11") and extra == 'toml'
+
