@@ -1,4 +1,5 @@
 from typing import Dict, Optional, Sequence, Tuple
+import time
 
 import numpy as np
 
@@ -71,10 +72,95 @@ class DynamixelRobot(Robot):
 
         if real:
             self._driver = DynamixelDriver(joint_ids, port=port, baudrate=baudrate)
+            
+            # FIRST: Check and clear any hardware errors
+            print(f"\n{'='*60}")
+            print(f"Initializing {port} - Checking and clearing motor errors...")
+            self._driver.check_and_clear_errors()
+            
+            # THEN: Disable torque on ALL motors
+            print(f"Disabling torque on ALL motors...")
+            print(f"Joint IDs being controlled: {joint_ids}")
             self._driver.set_torque_mode(False)
+            self._torque_on = False
+            
+            # Give time for motors to fully disable
+            time.sleep(0.5)
+            print(f"All motors should now be disabled and error-free")
+            print(f"{'='*60}\n")
+            
+            # Configure gripper for current-controlled position mode if present
+            if gripper_config is not None:
+                # Configure gripper motor for spring-back effect
+                self._driver.configure_gripper_mode(gripper_config[0])
+                
+                # Determine which position is open based on port
+                # Different arms have different gripper orientations
+                pos1_deg = gripper_config[1]
+                pos2_deg = gripper_config[2]
+                
+                # Port assignments are now corrected:
+                # Left arm is on /dev/ttyACM1
+                # Right arm is on /dev/ttyACM0
+                
+                if port == "/dev/ttyACM1":
+                    # LEFT arm: needs to determine which value opens it
+                    # Based on testing, MIN value (229°) makes it close
+                    # So use MAX value (288°) for open
+                    gripper_open_deg = max(pos1_deg, pos2_deg)  # 288.54
+                    gripper_close_deg = min(pos1_deg, pos2_deg)  # 229.04
+                    print(f"LEFT arm gripper: Using MAX value ({gripper_open_deg}) as open")
+                elif port == "/dev/ttyACM0":
+                    # RIGHT arm: MAX value opens it (198°)
+                    # Testing showed 139° closes it, 198° opens it
+                    gripper_open_deg = max(pos1_deg, pos2_deg)  # 198.89
+                    gripper_close_deg = min(pos1_deg, pos2_deg)  # 139.39
+                    print(f"RIGHT arm gripper: Using MAX value ({gripper_open_deg}) as open")
+                else:
+                    # Default: use min as open
+                    gripper_open_deg = min(pos1_deg, pos2_deg)
+                    gripper_close_deg = max(pos1_deg, pos2_deg)
+                    print(f"Default: Using MIN value as open")
+                
+                print(f"Gripper config: open={gripper_open_deg}°, closed={gripper_close_deg}°")
+                print(f"Setting gripper to OPEN position: {gripper_open_deg} degrees for spring-back effect")
+                
+                # Now enable torque to allow setting positions
+                self._driver.set_torque_mode(True)
+                self._torque_on = True
+                
+                # Set gripper to open position directly
+                gripper_open_rad = gripper_open_deg * np.pi / 180
+                
+                # Try direct approach: set only the gripper motor position
+                print(f"Setting gripper directly to {gripper_open_deg} degrees ({gripper_open_rad} rad)")
+                
+                # Get all current positions
+                current_joints = self._driver.get_joints()
+                
+                # Prepare positions for all motors
+                target_joints = current_joints.copy()
+                
+                # For the gripper (last motor), apply the open position WITH offsets/signs
+                # This matches how positions are set in the normal operation
+                target_joints[-1] = gripper_open_rad
+                
+                # Set positions for all joints
+                self._driver.set_joints(target_joints)
+                
+                # Verify the position was set
+                time.sleep(0.5)  # Wait for motor to move
+                new_pos = self._driver.get_joints()
+                actual_gripper_deg = new_pos[-1] * 180 / np.pi
+                print(f"Gripper actual position after setting: {actual_gripper_deg:.1f} degrees")
+                print("Gripper configured with spring-back to OPEN position")
+            else:
+                # For arms without gripper, just enable torque
+                self._driver.set_torque_mode(True)
+                self._torque_on = True
         else:
             self._driver = FakeDynamixelDriver(joint_ids)
-        self._torque_on = False
+            self._torque_on = False
         self._last_pos = None
         self._alpha = 0.99
 

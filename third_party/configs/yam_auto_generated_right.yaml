@@ -3,7 +3,7 @@ robot:
   channel: can_follow_r
 agent:
   _target_: gello.agents.gello_agent.GelloAgent
-  port: /dev/ttyACM1
+  port: /dev/ttyACM0
   dynamixel_config:
     _target_: gello.agents.gello_agent.DynamixelRobotConfig
     joint_ids: [1, 2, 3, 4, 5, 6]

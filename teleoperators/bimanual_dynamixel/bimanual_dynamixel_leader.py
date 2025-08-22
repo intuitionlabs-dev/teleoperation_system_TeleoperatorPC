@@ -181,6 +181,25 @@ class BimanualDynamixelLeader(Teleoperator):
         # YAM teleoperators don't use feedback
         pass
     
+    def enable_motors(self, enable: bool = True) -> None:
+        """Enable or disable motor torque for force feedback."""
+        if not self._is_connected:
+            logger.warning("Cannot enable/disable motors - not connected")
+            return
+        
+        try:
+            # Access the underlying robot objects to control torque
+            if hasattr(self.left_agent, '_robot'):
+                self.left_agent._robot.set_torque_mode(enable)
+                logger.info(f"Left arm motors {'enabled' if enable else 'disabled'}")
+            
+            if hasattr(self.right_agent, '_robot'):
+                self.right_agent._robot.set_torque_mode(enable)
+                logger.info(f"Right arm motors {'enabled' if enable else 'disabled'}")
+                
+        except Exception as e:
+            logger.error(f"Error setting motor torque mode: {e}")
+    
     def disconnect(self) -> None:
         """Disconnect from the Dynamixel leader arms."""
         if not self._is_connected:

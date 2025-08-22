@@ -18,13 +18,20 @@ from dynamixel_sdk.robotis_def import (
 )
 
 # Constants
+ADDR_OPERATING_MODE = 11
 ADDR_TORQUE_ENABLE = 64
+ADDR_HARDWARE_ERROR_STATUS = 70
 ADDR_GOAL_POSITION = 116
 LEN_GOAL_POSITION = 4
 ADDR_PRESENT_POSITION = 132
 LEN_PRESENT_POSITION = 4
+ADDR_REBOOT = 8  # Reboot motor to clear errors
 TORQUE_ENABLE = 1
 TORQUE_DISABLE = 0
+# Operating modes
+CURRENT_CONTROLLED_POSITION_MODE = 5
+EXTENDED_POSITION_MODE = 4
+POSITION_MODE = 3
 
 
 class DynamixelDriverProtocol(Protocol):
@@ -256,6 +263,72 @@ class DynamixelDriver(DynamixelDriverProtocol):
 
     def torque_enabled(self) -> bool:
         return self._torque_enabled
+
+    def set_operating_mode(self, dxl_id: int, mode: int):
+        """Set the operating mode for a specific Dynamixel motor."""
+        if self._is_fake:
+            return
+        
+        # Torque must be disabled to change operating mode
+        was_enabled = self._torque_enabled
+        if was_enabled:
+            self.set_torque_mode(False)
+        
+        with self._lock:
+            dxl_comm_result, dxl_error = self._packetHandler.write1ByteTxRx(
+                self._portHandler, dxl_id, ADDR_OPERATING_MODE, mode
+            )
+            if dxl_comm_result != COMM_SUCCESS or dxl_error != 0:
+                print(f"Failed to set operating mode for Dynamixel ID {dxl_id}")
+        
+        # Re-enable torque if it was enabled before
+        if was_enabled:
+            self.set_torque_mode(True)
+    
+    def check_and_clear_errors(self):
+        """Check for hardware errors and clear them if present."""
+        if self._is_fake:
+            return
+        
+        print("Checking for hardware errors on all motors...")
+        errors_found = False
+        
+        with self._lock:
+            for dxl_id in self._ids:
+                # Read hardware error status (returns: result, data, error)
+                dxl_comm_result, dxl_data, dxl_error = self._packetHandler.read1ByteTxRx(
+                    self._portHandler, dxl_id, ADDR_HARDWARE_ERROR_STATUS
+                )
+                
+                if dxl_comm_result == COMM_SUCCESS and dxl_data > 0:
+                    errors_found = True
+                    print(f"  Motor {dxl_id}: Hardware error detected (error code: {dxl_data})")
+                    
+                    # Reboot motor to clear errors
+                    print(f"  Motor {dxl_id}: Rebooting to clear error...")
+                    reboot_result = self._packetHandler.reboot(self._portHandler, dxl_id)
+                    
+                    if reboot_result == COMM_SUCCESS:
+                        print(f"  Motor {dxl_id}: Reboot command sent")
+                        time.sleep(0.5)  # Wait for reboot
+                    else:
+                        print(f"  Motor {dxl_id}: Failed to send reboot command")
+        
+        if errors_found:
+            print("Waiting 2 seconds for motors to complete reboot...")
+            time.sleep(2)
+            print("Error clearing complete")
+        else:
+            print("No hardware errors found")
+    
+    def configure_gripper_mode(self, gripper_id: int):
+        """Configure gripper motor for current-controlled position mode."""
+        if self._is_fake:
+            return
+        
+        # Set gripper to current-controlled position mode for spring-back effect
+        self.set_operating_mode(gripper_id, CURRENT_CONTROLLED_POSITION_MODE)
+        print(f"Set Dynamixel ID {gripper_id} to current-controlled position mode")
 
     def set_torque_mode(self, enable: bool):
         if self._is_fake:
