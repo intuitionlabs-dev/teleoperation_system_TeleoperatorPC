@@ -21,6 +21,15 @@ source .venv/bin/activate
 ./run_teleoperate.sh --system yam-dynamixel --remote-ip 100.119.166.86  # For YAM
 ./run_teleoperate.sh --system x5-dynamixel --remote-ip 127.0.0.1  # For X5 (local test)
 ./run_teleoperate.sh --system x5-dynamixel --remote-ip 100.119.166.86  # For X5 (remote)
+
+# Detailed version:
+python -m teleoperate \
+    --system x5-dynamixel \
+    --bimanual=true \
+    --remote_ip=100.119.166.86 \
+    --x5_left_port=/dev/ttyACM1 \
+    --x5_right_port=/dev/ttyACM0 \
+    --fps=60
 ```
 
 ## Systems

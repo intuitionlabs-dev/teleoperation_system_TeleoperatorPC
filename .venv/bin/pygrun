@@ -1,4 +1,4 @@
-#!/home/group/i2rt/teleoperation_system_TeleoperatorPC_X5-yam-piper/.venv/bin/python3.10
+#!/home/francesco/meta-tele-RTX/clean_version/teleoperation_system_TeleoperatorPC/.venv/bin/python3
 __author__ = 'jszheng'
 import optparse
 import sys
