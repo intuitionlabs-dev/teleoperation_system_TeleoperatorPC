@@ -101,26 +101,12 @@ class DynamixelRobot(Robot):
                 
                 # Port assignments are now corrected:
                 # Left arm is on /dev/ttyACM1
-                # Right arm is on /dev/ttyACM0
-                
-                if port == "/dev/ttyACM1":
-                    # LEFT arm: needs to determine which value opens it
-                    # Based on testing, MIN value (229°) makes it close
-                    # So use MAX value (288°) for open
-                    gripper_open_deg = max(pos1_deg, pos2_deg)  # 288.54
-                    gripper_close_deg = min(pos1_deg, pos2_deg)  # 229.04
-                    print(f"LEFT arm gripper: Using MAX value ({gripper_open_deg}) as open")
-                elif port == "/dev/ttyACM0":
-                    # RIGHT arm: MAX value opens it (198°)
-                    # Testing showed 139° closes it, 198° opens it
-                    gripper_open_deg = max(pos1_deg, pos2_deg)  # 198.89
-                    gripper_close_deg = min(pos1_deg, pos2_deg)  # 139.39
-                    print(f"RIGHT arm gripper: Using MAX value ({gripper_open_deg}) as open")
-                else:
-                    # Default: use min as open
-                    gripper_open_deg = min(pos1_deg, pos2_deg)
-                    gripper_close_deg = max(pos1_deg, pos2_deg)
-                    print(f"Default: Using MIN value as open")
+                # The gripper_config format is [id, close_pos, open_pos]
+                # So pos1_deg is close position and pos2_deg is open position
+                # Use them directly without any max/min logic
+                gripper_close_deg = pos1_deg  # First position is close
+                gripper_open_deg = pos2_deg   # Second position is open
+                print(f"Gripper on {port}: close={gripper_close_deg:.1f}°, open={gripper_open_deg:.1f}°")
                 
                 print(f"Gripper config: open={gripper_open_deg}°, closed={gripper_close_deg}°")
                 print(f"Setting gripper to OPEN position: {gripper_open_deg} degrees for spring-back effect")
@@ -194,10 +180,18 @@ class DynamixelRobot(Robot):
         assert len(pos) == self.num_dofs()
 
         if self.gripper_open_close is not None:
+            # Debug: print raw gripper position before normalization
+            raw_gripper_deg = pos[-1] * 180 / np.pi  # Convert to degrees for debugging
+            
             # map pos to [0, 1]
             g_pos = (pos[-1] - self.gripper_open_close[0]) / (
                 self.gripper_open_close[1] - self.gripper_open_close[0]
             )
+            
+            # Debug: print normalized value before clamping
+            if abs(g_pos - 1.0) < 0.01 or abs(g_pos) < 0.01 or g_pos > 1.0 or g_pos < 0.0:
+                print(f"Gripper DEBUG: raw={raw_gripper_deg:.1f}°, normalized={g_pos:.3f}, range=[{self.gripper_open_close[0]*180/np.pi:.1f}, {self.gripper_open_close[1]*180/np.pi:.1f}]°")
+            
             g_pos = min(max(0, g_pos), 1)
             pos[-1] = g_pos
 

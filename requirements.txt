@@ -1,5 +1,5 @@
 # Core dependencies for TeleoperatorPC teleoperation
-# Supports both piper-SO101 and yam-dynamixel systems
+# Supports piper-SO101, yam-dynamixel, and x5-dynamixel systems
 
 # Core packages
 draccus>=0.9.3

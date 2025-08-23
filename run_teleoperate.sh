@@ -1,6 +1,9 @@
 #!/bin/bash
 # Script to run teleoperation with various leader-follower systems
 
+# Set library path for ARX module (needed for X5 system)
+export LD_LIBRARY_PATH=/home/group/i2rt/ARX-dynamixel/RobotLearningGello/ARX_X5/py/arx_x5_python/bimanual/lib/arx_x5_src:$LD_LIBRARY_PATH
+
 # Default configuration
 SYSTEM="piper-so101"
 REMOTE_IP=""  # Will be set based on system
@@ -23,10 +26,11 @@ while [[ $# -gt 0 ]]; do
             ;;
         --help)
             echo "Usage: $0 [--system SYSTEM] [--remote-ip IP] [--fps FPS]"
-            echo "  --system: piper-so101 or yam-dynamixel (default: piper-so101)"
+            echo "  --system: piper-so101, yam-dynamixel, or x5-dynamixel (default: piper-so101)"
             echo "  --remote-ip: Robot PC IP address"
             echo "             Default for piper-so101: 100.117.16.87"
             echo "             Default for yam-dynamixel: 100.119.166.86"
+            echo "             Default for x5-dynamixel: 127.0.0.1 (local)"
             echo "  --fps: Control frequency (default: 60)"
             exit 0
             ;;
@@ -42,6 +46,8 @@ done
 if [ -z "$REMOTE_IP" ]; then
     if [ "$SYSTEM" = "yam-dynamixel" ]; then
         REMOTE_IP="100.119.166.86"
+    elif [ "$SYSTEM" = "x5-dynamixel" ]; then
+        REMOTE_IP="127.0.0.1"  # Default to local for X5
     else
         REMOTE_IP="100.104.247.35"
     fi
@@ -75,6 +81,14 @@ elif [ "$SYSTEM" = "yam-dynamixel" ]; then
         --remote_ip="$REMOTE_IP" \
         --yam_left_port=/dev/ttyACM0 \
         --yam_right_port=/dev/ttyACM1 \
+        --fps="$FPS"
+elif [ "$SYSTEM" = "x5-dynamixel" ]; then
+    python -m teleoperate \
+        --system "$SYSTEM" \
+        --bimanual=true \
+        --remote_ip="$REMOTE_IP" \
+        --x5_left_port=/dev/ttyACM3 \
+        --x5_right_port=/dev/ttyACM2 \
         --fps="$FPS"
 else
     echo "Unknown system: $SYSTEM"

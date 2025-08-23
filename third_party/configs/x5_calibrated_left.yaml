@@ -1,0 +1,21 @@
+agent:
+  _target_: gello.agents.gello_agent.GelloAgent
+  dynamixel_config:
+    _target_: gello.agents.gello_agent.DynamixelRobotConfig
+    joint_ids: [1, 2, 3, 4, 5, 6]
+    joint_offsets: [0.786932144185334, 4.71238898038469, 6.263243556937073, 3.0710295373470538,
+      4.695515191717948, 4.681709364626977]
+    joint_signs: [1.0, -1.0, -1.0, 1.0, 1.0, 1.0]
+    gripper_config: [7, 233.50332888888082, 288.6905996951388]
+  port: /dev/ttyACM1
+  start_joints: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+hz: 60
+max_steps: 1000
+robot:
+  _target_: gello.robots.x5.X5Robot
+  channel: can1
+dof: 7
+home_offset: [0.786932144185334, 4.71238898038469, 6.263243556937073, 3.0710295373470538,
+  4.695515191717948, 4.681709364626977, 0.0]
+joint_signs: [1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0]
+timestamp: '2025-08-23 06:06:27'

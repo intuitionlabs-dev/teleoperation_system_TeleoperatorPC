@@ -1,6 +1,6 @@
 # TeleoperatorPC - Teleoperation Client
 
-Supports both **Piper-SO101** and **YAM-Dynamixel** teleoperation systems.
+Supports **Piper-SO101**, **YAM-Dynamixel**, and **X5-Dynamixel** teleoperation systems.
 
 ## Requirements
 
@@ -19,11 +19,13 @@ source .venv/bin/activate
 # 3. Run teleoperation
 ./run_teleoperate.sh --system piper-so101 --remote-ip 100.104.247.35  # For Piper
 ./run_teleoperate.sh --system yam-dynamixel --remote-ip 100.119.166.86  # For YAM
+./run_teleoperate.sh --system x5-dynamixel --remote-ip 127.0.0.1  # For X5 (local test)
+./run_teleoperate.sh --system x5-dynamixel --remote-ip 100.119.166.86  # For X5 (remote)
 ```
 
 ## Systems
 
-### Piper-SO101 (Default)
+### Piper-SO101Default)
 - Leader: SO101 arms via USB
 - Follower: Piper robots
 - Default IP: 100.117.16.87
@@ -35,8 +37,15 @@ source .venv/bin/activate
 - Default IP: 100.119.166.86
 - Ports: 5565-5568
 
+### X5-Dynamixel
+- Leader: Dynamixel arms via USB
+- Follower: ARX X5 robots
+- Default IP: 127.0.0.1 (local) or 100.119.166.86 (remote)
+- Ports: 5575-5578
+
 ## USB Ports
-Both systems use `/dev/ttyACM0` (left) and `/dev/ttyACM1` (right)
+- Piper/YAM: `/dev/ttyACM0` (left) and `/dev/ttyACM1` (right)
+- X5: `/dev/ttyACM3` (left) and `/dev/ttyACM2` (right)
 
 ## Calibration
 
@@ -46,12 +55,23 @@ Run calibration on first use:
 python -m teleoperate --system piper-so101 --bimanual=true --remote_ip=100.104.247.35
 ```
 
-### Dynamixel/YAM
+### YAM-Dynamixel
 Run calibration to generate config files:
 ```bash
 ./calibrate_yam.sh
 ```
 Position arms straight up (known position) when prompted.
+
+### X5-Dynamixel
+Run calibration to generate config files:
+```bash
+./calibrate_x5.sh
+```
+Position both leader and follower arms in matching neutral positions when prompted.
+The script will:
+1. Capture current positions from both systems
+2. Calculate joint offsets and signs
+3. Generate configuration files automatically
 
 ## Motor Control (Optional)
 

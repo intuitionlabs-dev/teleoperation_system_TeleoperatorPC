@@ -1,10 +1,7 @@
-#!/home/francesco/meta-tele-RTX/clean_version/teleoperation_system_TeleoperatorPC_yam-piper/.venv/bin/python3
-# -*- coding: utf-8 -*-
+#!/home/group/i2rt/teleoperation_system_TeleoperatorPC_X5-yam-piper/.venv/bin/python3.10
 import sys
 from can.logger import main
-if __name__ == "__main__":
-    if sys.argv[0].endswith("-script.pyw"):
-        sys.argv[0] = sys.argv[0][:-11]
-    elif sys.argv[0].endswith(".exe"):
+if __name__ == '__main__':
+    if sys.argv[0].endswith('.exe'):
         sys.argv[0] = sys.argv[0][:-4]
     sys.exit(main())
